@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>SSE Event</title>
+</head>
+
+<body>
+	<h1>SEE Events</h1>
+	<button id="toggle">Start stream</button>
+	<section id="output"></section>
+	<script>
+		class EventManager {
+			constructor(toggle) {
+				this.toggle = toggle
+				this.isActive = false
+				this.source = undefined
+				this.pings = 0
+
+			}
+			Init() {
+				this.toggle.addEventListener("click", (ev) => {
+					this.Toggle()
+				})
+			}
+			Toggle() {
+				if (!this.isActive)
+					this.Start()
+				else
+					this.Stop()
+			}
+			Start() {
+				console.log("Starting connection ...")
+				const es = new EventSource("/api/events")
+				es.onerror = (err) => {
+					this.Stop()
+				}
+				//es.onmessage = (msg) => {
+				//	console.log("Message: ", msg)
+				//}
+				//es.onopen = (...args) => {
+				//	console.log("Open", args)
+				//}
+				es.addEventListener("ping", (event) => {
+					this.Add(event)
+				})
+				this.source = es
+				this.isActive = true
+				this.toggle.innerText = "Stop stream"
+			}
+			Stop() {
+				console.log("Closing connection ...")
+				this.source.close()
+				this.source.removeEventListener("ping", (event) => {
+					this.Add(event)
+				})
+				this.source = undefined
+				this.pings = 0
+				this.toggle.innerText = "Start stream"
+				this.isActive = false
+				this.Render()
+			}
+			Add(event) {
+				const parse = JSON.parse(event.data)
+				this.pings++
+				this.Render()
+			}
+			Render() {
+				const out = document.getElementById("output")
+				out.innerText = this.pings + " pings"
+			}
+		}
+		const btn = document.getElementById("toggle")
+		const evn = new EventManager(btn)
+		evn.Init()
+	</script>
+</body>
+
+</html>
