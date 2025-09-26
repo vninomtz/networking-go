@@ -8,7 +8,11 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
+
+// https://www.rfc-editor.org/rfc/rfc862.html
+// TODO: Implement echo using UDP
 
 func main() {
 	port := flag.String("port", ":7", "Listen port")
@@ -49,6 +53,7 @@ func Echo(port, msg string) {
 	}
 	defer conn.Close()
 
+	start := time.Now()
 	_, err = conn.Write([]byte(msg))
 	if err != nil {
 		log.Fatalf("Error to write: %w", err)
@@ -59,7 +64,9 @@ func Echo(port, msg string) {
 	if err != nil {
 		log.Fatalf("Error to read: %w", err)
 	}
+	rtt := time.Since(start)
 	fmt.Printf("ECHO: %s\n", string(buf))
+	fmt.Printf("RTT: %v", rtt)
 }
 
 func handle(conn net.Conn) {
