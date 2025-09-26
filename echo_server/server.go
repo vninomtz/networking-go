@@ -2,16 +2,30 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
+	"strings"
 )
 
 func main() {
 	port := flag.String("port", ":7", "Listen port")
+	serve := flag.Bool("serve", false, "Run the ECO Server")
 	flag.Parse()
 
-	listener, err := net.Listen("tcp", *port)
+	if *serve {
+		Run(*port)
+		return
+	}
+	msg := strings.Join(os.Args[1:], " ")
+	Echo(*port, msg)
+
+}
+
+func Run(port string) {
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("Error creating listener: %w", err)
 	}
@@ -26,6 +40,26 @@ func main() {
 		}
 		go handleWithCopy(conn)
 	}
+}
+
+func Echo(port, msg string) {
+	conn, err := net.Dial("tcp", port)
+	if err != nil {
+		log.Fatalf("Error create dial: %w", err)
+	}
+	defer conn.Close()
+
+	_, err = conn.Write([]byte(msg))
+	if err != nil {
+		log.Fatalf("Error to write: %w", err)
+	}
+
+	buf := make([]byte, 1024)
+	_, err = conn.Read(buf)
+	if err != nil {
+		log.Fatalf("Error to read: %w", err)
+	}
+	fmt.Printf("ECHO: %s\n", string(buf))
 }
 
 func handle(conn net.Conn) {
